@@ -1,494 +1,568 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Plan Dietético">
-    <title>Plan Dietético - UFPC</title>
+    <title>Plan Dietético UFPC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        input, select, textarea {
-            user-select: text;
-            -webkit-user-select: text;
-        }
-        .scrollable { 
-            max-height: 400px; 
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        input, select, button { -webkit-appearance: none; appearance: none; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 min-h-screen">
-    <div id="app" class="p-4 sm:p-6"></div>
+<body class="bg-gradient-to-br from-emerald-50 to-teal-50 min-h-screen p-4">
+    <div class="max-w-2xl mx-auto">
+        <!-- HEADER -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-black text-emerald-700 mb-2">Plan Dietético 🥗</h1>
+            <p class="text-gray-600">Policlínico Universitario UFPC</p>
+        </div>
 
-    <script>
-        // === INICIALIZACIÓN ===
-        let mealsRegistry = JSON.parse(localStorage.getItem('mealsRegistry') || '{}');
-        let selectedDate = new Date();
-        let dayType = 'rest';
-        let activeTab = 'dashboard';
+```
+    <!-- TABS -->
+    <div class="flex gap-2 mb-6">
+        <button id="tabPlan" onclick="goTab('plan')" class="flex-1 py-3 rounded-lg font-bold transition bg-emerald-600 text-white shadow-lg">📋 Plan</button>
+        <button id="tabRegistro" onclick="goTab('registro')" class="flex-1 py-3 rounded-lg font-bold transition bg-white text-gray-900 border-2 border-gray-200">✅ Registro</button>
+        <button id="tabEquiv" onclick="goTab('equivalencias')" class="flex-1 py-3 rounded-lg font-bold transition bg-white text-gray-900 border-2 border-gray-200">📖 Info</button>
+    </div>
 
-        // === PLANES DE INTERCAMBIOS ===
-        const intercambios = {
-            rest: {
-                Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
-                Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
-                Merienda: { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
-                Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 },
-                TOTAL: { LAC: 2, HC: 6, PRO: 9, VER: 2, FRU: 2, GRA: 3 }
-            },
-            morning: {
-                Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
-                'Entreno (Mañana)': { LAC: 1, HC: 0, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
-                Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
-                Merienda: { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
-                Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 },
-                TOTAL: { LAC: 3, HC: 6, PRO: 11, VER: 2, FRU: 3, GRA: 3 }
-            },
-            afternoon: {
-                Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
-                'Media Mañana': { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
-                Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
-                'Entreno (Tarde)': { LAC: 1, HC: 0, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
-                Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 },
-                TOTAL: { LAC: 3, HC: 6, PRO: 11, VER: 2, FRU: 3, GRA: 3 }
-            }
-        };
+    <!-- CONTENIDO DINÁMICO -->
+    <div id="content"></div>
+</div>
 
-        // === GRUPOS DE ALIMENTOS ===
-        const foodGroups = [
-            { key: 'LAC', label: 'Lácteos', emoji: '🥛', color: 'from-yellow-100 to-yellow-200' },
-            { key: 'HC', label: 'Carbohidratos', emoji: '🍚', color: 'from-orange-100 to-orange-200' },
-            { key: 'PRO', label: 'Proteínas', emoji: '🍗', color: 'from-red-100 to-red-200' },
-            { key: 'VER', label: 'Verduras', emoji: '🥗', color: 'from-green-100 to-green-200' },
-            { key: 'FRU', label: 'Frutas', emoji: '🍎', color: 'from-pink-100 to-pink-200' },
-            { key: 'GRA', label: 'Grasas', emoji: '🥑', color: 'from-blue-100 to-blue-200' }
-        ];
+<script>
+    // ===== DATOS =====
+    let currentTab = 'plan';
+    let selectedDay = 'rest';
+    let selectedMeal = null;
+    let selectedMealForRegistro = null;
+    let selectedDate = new Date().toISOString().split('T')[0];
+    let meals = JSON.parse(localStorage.getItem('meals') || '{}');
 
-        // === EQUIVALENCIAS COMPLETAS ===
-        const equivalencias = {
-            LAC: [
-                { nombre: 'Leche semidesnatada o entera', medida: '1 vaso (200ml)' },
-                { nombre: 'Kéfir', medida: '1 vaso (200ml)' },
-                { nombre: 'Yogur desnatado natural', medida: '1 yogur (125g)' },
-                { nombre: 'Queso de Burgos', medida: '1 ración (75g)' },
-                { nombre: 'Queso tierno de cabra', medida: '1 ración (50g)' }
-            ],
-            HC: [
-                { nombre: 'Papa o batata mediana', medida: '1 unidad (220g)' },
-                { nombre: 'Gnocchi (a base de papa)', medida: '1 ración (100g)' },
-                { nombre: 'Legumbres cocidas (garbanzos, judías, lentejas)', medida: '1 ración (60g)' },
-                { nombre: 'Fajita de trigo', medida: '1 grande o 2 normales' },
-                { nombre: 'Pan integral de molde', medida: '2 rebanadas' },
-                { nombre: 'Cereales integrales o copos de avena', medida: '1 ración (50g)' },
-                { nombre: 'Arroz blanco o integral', medida: '1 guarnición (45g)' },
-                { nombre: 'Pasta blanca o integral', medida: '1 guarnición (45g)' },
-                { nombre: 'Noodles de arroz', medida: '1 guarnición (45g)' },
-                { nombre: 'Quinoa', medida: '1 guarnición (45g)' },
-                { nombre: 'Couscous o cuscús', medida: '1 guarnición (45g)' },
-                { nombre: 'Pan integral o 1/2 baguette', medida: '2 rebanadas (40g)' },
-                { nombre: 'Biscotes de pan tostado integral', medida: '2-4 unidades' }
-            ],
-            PRO: [
-                { nombre: 'Pescado blanco (merluza, lenguado, gallo)', medida: '1 ración (100g)' },
-                { nombre: 'Claras de huevos', medida: '3 claras (90g)' },
-                { nombre: 'Queso cottage', medida: '1 ración (70g)' },
-                { nombre: 'Carne de ave (pollo y pavo)', medida: '1/2 filete (60g)' },
-                { nombre: 'Carne magra (ternera y cerdo)', medida: '1/2 filete (60g)' },
-                { nombre: 'Pescado azul (emperador, salmón, bonito)', medida: '1/2 filete (60g)' },
-                { nombre: 'Queso havarti light o similar', medida: '2-3 lonchas' },
-                { nombre: 'Huevo mediano o tamaño M', medida: '1 unidad' },
-                { nombre: 'Pechuga de pavo o jamón serrano magro', medida: '2-3 lonchas (50g)' },
-                { nombre: 'Pescado en conserva (lata pequeña)', medida: '1 lata (100g)' },
-                { nombre: 'Salmón ahumado', medida: '2-3 lonchas' },
-                { nombre: 'Legumbres cocidas (garbanzos, judías, lentejas)', medida: '1/2 ración (30g)' },
-                { nombre: 'Queso feta pequeño', medida: '1 ración (30g)' },
-                { nombre: 'Queso mozzarella', medida: '1 ración (30g)' },
-                { nombre: 'Soja texturizada deshidratada', medida: '1/2 vaso' },
-                { nombre: 'Queso havarti light', medida: '1 loncha (25g)' },
-                { nombre: 'Proteína en polvo', medida: '1/2 cacito (scoop) (15g)' }
-            ],
-            VER: [
-                { nombre: 'Verduras frescas (elección libre)', medida: '200g (ad libitum)' },
-                { nombre: 'Champiñones o setas', medida: 'ad libitum' },
-                { nombre: 'Lechuga (cualquier tipo)', medida: '200g (ad libitum)' },
-                { nombre: 'Rúcula', medida: '200g (ad libitum)' },
-                { nombre: 'Espinaca tierna', medida: '200g (ad libitum)' },
-                { nombre: 'Tomate', medida: '200g (ad libitum)' },
-                { nombre: 'Tomate cherry', medida: '12-15 unidades' },
-                { nombre: 'Pepino', medida: '200g (ad libitum)' },
-                { nombre: 'Pimiento rojo', medida: '200g (ad libitum)' },
-                { nombre: 'Pimiento verde', medida: '200g (ad libitum)' },
-                { nombre: 'Pimiento amarillo', medida: '200g (ad libitum)' },
-                { nombre: 'Espinacas crudas', medida: '200g (ad libitum)' },
-                { nombre: 'Espinacas cocidas', medida: '200g (ad libitum)' },
-                { nombre: 'Calabacín', medida: '200g (ad libitum)' },
-                { nombre: 'Brócoli', medida: '200g (ad libitum)' },
-                { nombre: 'Coliflor', medida: '200g (ad libitum)' },
-                { nombre: 'Col (cualquier tipo)', medida: '200g (ad libitum)' },
-                { nombre: 'Cebolla', medida: '200g (ad libitum)' },
-                { nombre: 'Zanahoria cruda', medida: '200g (ad libitum)' },
-                { nombre: 'Zanahoria cocida', medida: '200g (ad libitum)' },
-                { nombre: 'Apio', medida: '200g (ad libitum)' },
-                { nombre: 'Berenjena', medida: '200g (ad libitum)' },
-                { nombre: 'Judías verdes', medida: '200g (ad libitum)' },
-                { nombre: 'Puerro', medida: '200g (ad libitum)' }
-            ],
-            FRU: [
-                { nombre: 'Manzana roja mediana', medida: '1 unidad (200g)' },
-                { nombre: 'Manzana verde mediana', medida: '1 unidad (200g)' },
-                { nombre: 'Manzana golden mediana', medida: '1 unidad (200g)' },
-                { nombre: 'Plátano mediano', medida: '1 unidad (120g)' },
-                { nombre: 'Plátano pequeño', medida: '1 unidad (100g)' },
-                { nombre: 'Naranja mediana', medida: '1 unidad (290g)' },
-                { nombre: 'Naranja grande', medida: '1 unidad (300g)' },
-                { nombre: 'Mandarina', medida: '2 pequeñas o 1 grande (170g)' },
-                { nombre: 'Clementina', medida: '3 unidades (180g)' },
-                { nombre: 'Fresas frescas', medida: '6-8 unidades (250g)' },
-                { nombre: 'Fresón', medida: '5-6 unidades (250g)' },
-                { nombre: 'Arándanos frescos', medida: '1 plato (125g)' },
-                { nombre: 'Arándanos congelados', medida: '125g' },
-                { nombre: 'Kiwi verde', medida: '1 unidad mediana (100g)' },
-                { nombre: 'Kiwi amarillo', medida: '1 unidad mediana (100g)' },
-                { nombre: 'Pera mediana', medida: '1 unidad (170g)' },
-                { nombre: 'Melocotón pequeño', medida: '1 unidad (165g)' },
-                { nombre: 'Nectarina', medida: '1 unidad pequeña (165g)' },
-                { nombre: 'Cereza', medida: '18 unidades (145g)' },
-                { nombre: 'Frambuesa', medida: '1 plato pequeño (125g)' },
-                { nombre: 'Mora', medida: '1 plato pequeño (125g)' },
-                { nombre: 'Piña natural', medida: '2 rodajas finas (120g)' },
-                { nombre: 'Melón', medida: '1 rodaja mediana (445g)' },
-                { nombre: 'Sandía', medida: '1 rodaja mediana (395g)' },
-                { nombre: 'Uvas blancas', medida: '1 ramillete (125g)' },
-                { nombre: 'Uvas negras', medida: '1 ramillete (125g)' },
-                { nombre: 'Papaya', medida: '1/4 grande o 1/2 mediana (200g)' },
-                { nombre: 'Mango', medida: '1/2 unidad (190g)' },
-                { nombre: 'Albaricoque fresco', medida: '3 unidades (190g)' },
-                { nombre: 'Granada pequeña', medida: '1 unidad (215g)' }
-            ],
-            GRA: [
-                { nombre: 'Aguacate fresco', medida: '1/4 unidad (60g)' },
-                { nombre: 'Aceitunas verdes pequeñas', medida: '10-12 unidades' },
-                { nombre: 'Aceitunas negras pequeñas', medida: '10-12 unidades' },
-                { nombre: 'Queso feta', medida: '1 ración (50g)' },
-                { nombre: 'Queso mozzarella', medida: '1 ración (30g)' },
-                { nombre: 'Queso cheddar light', medida: '25g' },
-                { nombre: 'Queso havarti light', medida: '2-3 lonchas (25g)' },
-                { nombre: 'Chocolate negro 70%', medida: '2 onzas (20g)' },
-                { nombre: 'Chocolate negro 80%', medida: '1.5 onzas (20g)' },
-                { nombre: 'Frutos secos variados', medida: '1/2 puñado (15g)' },
-                { nombre: 'Aceite de oliva virgen', medida: '1 cucharada (10ml)' },
-                { nombre: 'Aceite de coco', medida: '1 cucharada (10ml)' },
-                { nombre: 'Aceite de girasol', medida: '10ml' },
-                { nombre: 'Mantequilla', medida: '7g' },
-                { nombre: 'Almendras crudas', medida: '10-12 unidades (15g)' },
-                { nombre: 'Avellanas crudas', medida: '10-12 unidades (15g)' },
-                { nombre: 'Cacahuetes tostados', medida: '12-15 unidades (15g)' },
-                { nombre: 'Pistachos', medida: '15-20 unidades (15g)' },
-                { nombre: 'Nueces', medida: '4-5 mitades (15g)' },
-                { nombre: 'Piñones', medida: '2 cucharadas (15g)' },
-                { nombre: 'Semillas de girasol', medida: '2 cucharadas (15g)' },
-                { nombre: 'Semillas de calabaza', medida: '2 cucharadas (15g)' },
-                { nombre: 'Tahine (pasta de sésamo)', medida: '1 cucharada (15g)' },
-                { nombre: 'Mantequilla de cacahuete', medida: '1 cucharada (16g)' },
-                { nombre: 'Mantequilla de almendra', medida: '1 cucharada (16g)' }
-            ]
-        };
+    const emojis = {
+        LAC: '🥛', HC: '🍚', PRO: '🍗', VER: '🥗', FRU: '🍎', GRA: '🥑'
+    };
 
-        // === FUNCIONES AUXILIARES ===
-        function saveMeals() {
-            try {
-                localStorage.setItem('mealsRegistry', JSON.stringify(mealsRegistry));
-            } catch (e) {
-                console.error('Error saving meals:', e);
-            }
+    const plans = {
+        rest: {
+            name: '😴 Día de Descanso',
+            Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
+            Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
+            Merienda: { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
+            Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 }
+        },
+        morning: {
+            name: '🌅 Entreno Mañana',
+            Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
+            'Entreno': { LAC: 1, HC: 0, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
+            Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
+            Merienda: { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
+            Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 }
+        },
+        afternoon: {
+            name: '🌙 Entreno Tarde',
+            Desayuno: { LAC: 0, HC: 1, PRO: 2, VER: 0, FRU: 0, GRA: 1 },
+            'Media Mañana': { LAC: 1, HC: 1, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
+            Almuerzo: { LAC: 1, HC: 2, PRO: 3, VER: 1, FRU: 1, GRA: 1 },
+            'Entreno': { LAC: 1, HC: 0, PRO: 2, VER: 0, FRU: 1, GRA: 0 },
+            Cena: { LAC: 0, HC: 2, PRO: 2, VER: 1, FRU: 0, GRA: 1 }
         }
+    };
 
-        function calculateTotals(meals) {
-            const totals = { LAC: 0, HC: 0, PRO: 0, VER: 0, FRU: 0, GRA: 0 };
-            meals.forEach(meal => {
-                foodGroups.forEach(g => {
-                    totals[g.key] += meal[g.key] || 0;
-                });
-            });
-            return totals;
+    const totals = {
+        rest: { LAC: 2, HC: 6, PRO: 9, VER: 2, FRU: 2, GRA: 3 },
+        morning: { LAC: 3, HC: 6, PRO: 11, VER: 2, FRU: 3, GRA: 3 },
+        afternoon: { LAC: 3, HC: 6, PRO: 11, VER: 2, FRU: 3, GRA: 3 }
+    };
+
+    const equivalencias = {
+        LAC: [
+            'Leche semidesnatada o entera (1 vaso 200ml)',
+            'Kéfir (1 vaso 200ml)',
+            'Yogur desnatado natural (1 yogur 125g)',
+            'Queso de Burgos (1 ración 75g)',
+            'Queso tierno de cabra (1 ración 50g)'
+        ],
+        HC: [
+            'Papa o batata mediana (1 unidad 220g)',
+            'Gnocchi a base de papa (1 ración 100g)',
+            'Legumbres: garbanzos, judías, lentejas (1 ración 60g)',
+            'Fajita de trigo (1 grande o 2 normales)',
+            'Pan integral de molde (2 rebanadas)',
+            'Cereales integrales o copos de avena (1 ración 50g)',
+            'Arroz blanco o integral (1 guarnición 45g)',
+            'Pasta blanca o integral (1 guarnición 45g)',
+            'Noodles de arroz (1 guarnición 45g)',
+            'Quinoa (1 guarnición 45g)',
+            'Couscous o cuscús (1 guarnición 45g)',
+            'Pan integral o 1/2 baguette (2 rebanadas 40g)',
+            'Biscotes de pan tostado integral (2-4 unidades)'
+        ],
+        PRO: [
+            'Pescado blanco: merluza, lenguado, gallo (1 ración 100g)',
+            'Claras de huevos medianos (3 claras 90g)',
+            'Queso cottage (1 ración 70g)',
+            'Carne de ave: pollo y pavo (1/2 filete 60g)',
+            'Carne magra: ternera y cerdo (1/2 filete 60g)',
+            'Pescado azul: emperador, salmón, bonito (1/2 filete 60g)',
+            'Queso havarti light o similar (2-3 lonchas)',
+            'Huevo mediano o tamaño M (1 unidad)',
+            'Pechuga de pavo o jamón serrano magro (2-3 lonchas 50g)',
+            'Pescado en conserva: lata pequeña (1 lata 100g)',
+            'Salmón ahumado (2-3 lonchas)',
+            'Legumbres cocidas: garbanzos, judías, lentejas (1/2 ración 30g)',
+            'Queso feta pequeño (1 ración 30g)',
+            'Queso mozzarella (1 ración 30g)',
+            'Soja texturizada deshidratada (1/2 vaso)',
+            'Queso havarti light (1 loncha 25g)',
+            'Proteína en polvo (1/2 cacito 15g)'
+        ],
+        VER: [
+            'Lechuga (cualquier tipo) - ad libitum',
+            'Rúcula - ad libitum',
+            'Espinaca tierna - ad libitum',
+            'Tomate - ad libitum',
+            'Tomate cherry (12-15 unidades)',
+            'Pepino - ad libitum',
+            'Pimiento rojo - ad libitum',
+            'Pimiento verde - ad libitum',
+            'Pimiento amarillo - ad libitum',
+            'Espinacas crudas - ad libitum',
+            'Espinacas cocidas - ad libitum',
+            'Calabacín - ad libitum',
+            'Brócoli - ad libitum',
+            'Coliflor - ad libitum',
+            'Champiñones o setas - ad libitum',
+            'Col (cualquier tipo) - ad libitum',
+            'Cebolla - ad libitum',
+            'Zanahoria cruda - ad libitum',
+            'Zanahoria cocida - ad libitum',
+            'Apio - ad libitum',
+            'Berenjena - ad libitum',
+            'Judías verdes - ad libitum',
+            'Puerro - ad libitum'
+        ],
+        FRU: [
+            'Manzana roja mediana (1 unidad 200g)',
+            'Manzana verde mediana (1 unidad 200g)',
+            'Manzana golden mediana (1 unidad 200g)',
+            'Plátano mediano (1 unidad 120g)',
+            'Plátano pequeño (1 unidad 100g)',
+            'Naranja mediana (1 unidad 290g)',
+            'Naranja grande (1 unidad 300g)',
+            'Mandarina (2 pequeñas o 1 grande 170g)',
+            'Clementina (3 unidades 180g)',
+            'Fresas frescas (6-8 unidades 250g)',
+            'Fresón (5-6 unidades 250g)',
+            'Arándanos frescos (1 plato 125g)',
+            'Arándanos congelados (125g)',
+            'Kiwi verde (1 unidad mediana 100g)',
+            'Kiwi amarillo (1 unidad mediana 100g)',
+            'Pera mediana (1 unidad 170g)',
+            'Melocotón pequeño (1 unidad 165g)',
+            'Nectarina (1 unidad pequeña 165g)',
+            'Cereza (18 unidades 145g)',
+            'Frambuesa (1 plato pequeño 125g)',
+            'Mora (1 plato pequeño 125g)',
+            'Piña natural (2 rodajas finas 120g)',
+            'Melón (1 rodaja mediana 445g)',
+            'Sandía (1 rodaja mediana 395g)',
+            'Uvas blancas (1 ramillete 125g)',
+            'Uvas negras (1 ramillete 125g)',
+            'Papaya (1/4 grande o 1/2 mediana 200g)',
+            'Mango (1/2 unidad 190g)',
+            'Albaricoque fresco (3 unidades 190g)',
+            'Granada pequeña (1 unidad 215g)'
+        ],
+        GRA: [
+            'Aguacate fresco (1/4 unidad 60g)',
+            'Aceitunas verdes pequeñas (10-12 unidades)',
+            'Aceitunas negras pequeñas (10-12 unidades)',
+            'Queso feta (1 ración 50g)',
+            'Queso mozzarella (1 ración 30g)',
+            'Queso cheddar light (25g)',
+            'Queso havarti light (2-3 lonchas 25g)',
+            'Chocolate negro 70% (2 onzas 20g)',
+            'Chocolate negro 80% (1.5 onzas 20g)',
+            'Frutos secos variados (1/2 puñado 15g)',
+            'Aceite de oliva virgen (1 cucharada 10ml)',
+            'Aceite de coco (1 cucharada 10ml)',
+            'Aceite de girasol (10ml)',
+            'Mantequilla (7g)',
+            'Almendras crudas (10-12 unidades 15g)',
+            'Avellanas crudas (10-12 unidades 15g)',
+            'Cacahuetes tostados (12-15 unidades 15g)',
+            'Pistachos (15-20 unidades 15g)',
+            'Nueces (4-5 mitades 15g)',
+            'Piñones (2 cucharadas 15g)',
+            'Semillas de girasol (2 cucharadas 15g)',
+            'Semillas de calabaza (2 cucharadas 15g)',
+            'Tahine - pasta de sésamo (1 cucharada 15g)',
+            'Mantequilla de cacahuete (1 cucharada 16g)',
+            'Mantequilla de almendra (1 cucharada 16g)'
+        ]
+    };
+
+    // ===== FUNCIONES =====
+    function goTab(tab) {
+        currentTab = tab;
+        selectedMeal = null;
+        selectedMealForRegistro = null;
+        render();
+    }
+
+    function updateInputs() {
+        render();
+    }
+
+    function render() {
+        // Actualizar botones
+        document.getElementById('tabPlan').className = currentTab === 'plan' ? 'flex-1 py-3 rounded-lg font-bold transition bg-emerald-600 text-white shadow-lg' : 'flex-1 py-3 rounded-lg font-bold transition bg-white text-gray-900 border-2 border-gray-200';
+        document.getElementById('tabRegistro').className = currentTab === 'registro' ? 'flex-1 py-3 rounded-lg font-bold transition bg-emerald-600 text-white shadow-lg' : 'flex-1 py-3 rounded-lg font-bold transition bg-white text-gray-900 border-2 border-gray-200';
+        document.getElementById('tabEquiv').className = currentTab === 'equivalencias' ? 'flex-1 py-3 rounded-lg font-bold transition bg-emerald-600 text-white shadow-lg' : 'flex-1 py-3 rounded-lg font-bold transition bg-white text-gray-900 border-2 border-gray-200';
+
+        // Renderizar contenido
+        let html = '';
+        if (currentTab === 'plan') {
+            html = renderPlan();
+        } else if (currentTab === 'registro') {
+            html = renderRegistro();
+        } else {
+            html = renderEquivalencias();
         }
+        
+        document.getElementById('content').innerHTML = html;
+    }
 
-        function getDaysInMonth(date) {
-            return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-        }
-
-        function getFirstDayOfMonth(date) {
-            return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-        }
-
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-        // === RENDERIZAR APP ===
-        function renderApp() {
-            const dateKey = selectedDate.toISOString().split('T')[0];
-            const currentPlan = intercambios[dayType];
-            const todayMeals = mealsRegistry[dateKey] || [];
-            const totals = calculateTotals(todayMeals);
-            const targets = currentPlan.TOTAL;
-
-            let html = `<div class="max-w-7xl mx-auto">`;
-            
-            // HEADER
-            html += `
-                <div class="flex items-center justify-between mb-8">
-                    <h1 class="text-3xl sm:text-4xl font-black text-gray-900">Plan Dietético 🥗</h1>
+    function renderPlan() {
+        let html = `
+            <div class="space-y-4">
+                <!-- SELECTOR DE DÍA -->
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="selectedDay='rest'; selectedMeal=null; render()" class="p-4 rounded-lg font-bold text-center transition ${selectedDay === 'rest' ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-2 border-gray-300'}">
+                        <div class="text-2xl mb-1">😴</div>
+                        <div class="text-sm">Descanso</div>
+                    </button>
+                    <button onclick="selectedDay='morning'; selectedMeal=null; render()" class="p-4 rounded-lg font-bold text-center transition ${selectedDay === 'morning' ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-2 border-gray-300'}">
+                        <div class="text-2xl mb-1">🌅</div>
+                        <div class="text-sm">Entreno Mañana</div>
+                    </button>
+                    <button onclick="selectedDay='afternoon'; selectedMeal=null; render()" class="p-4 rounded-lg font-bold text-center transition ${selectedDay === 'afternoon' ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-2 border-gray-300'}">
+                        <div class="text-2xl mb-1">🌙</div>
+                        <div class="text-sm">Entreno Tarde</div>
+                    </button>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-lg mb-6 p-2 flex flex-wrap gap-2 sticky top-0 z-50">
-                    <button onclick="window.activeTab='dashboard'; window.renderApp()" class="px-4 py-2 rounded-lg font-bold ${activeTab === 'dashboard' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-900'}">📊 Dashboard</button>
-                    <button onclick="window.activeTab='equivalencias'; window.renderApp()" class="px-4 py-2 rounded-lg font-bold ${activeTab === 'equivalencias' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-900'}">📖 Equivalencias</button>
-                </div>
-            `;
-
-            if (activeTab === 'dashboard') {
-                // CALENDARIO Y AGENDA
-                const days = [];
-                const firstDay = getFirstDayOfMonth(selectedDate);
-                const daysInMonth = getDaysInMonth(selectedDate);
-
-                for (let i = 0; i < firstDay; i++) days.push(null);
-                for (let i = 1; i <= daysInMonth; i++) {
-                    days.push(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), i));
-                }
-
-                html += `<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">`;
-                
-                // === CALENDARIO (IZQUIERDA) ===
-                html += `
-                    <div class="lg:col-span-1">
-                        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24 max-h-[calc(100vh-150px)] overflow-y-auto">
-                            <h2 class="text-lg font-bold mb-4">📅 Calendario</h2>
-                            <p class="text-center font-bold text-gray-900 mb-4 text-sm">${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}</p>
-
-                            <div class="grid grid-cols-7 gap-1 mb-6">
-                                ${['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map(d => `<div class="text-center text-xs font-bold text-gray-600 py-1">${d}</div>`).join('')}
-                                ${days.map((day, idx) => {
-                                    if (!day) return '<div></div>';
-                                    const dk = day.toISOString().split('T')[0];
-                                    const dayMeals = mealsRegistry[dk] || [];
-                                    const dayTotals = calculateTotals(dayMeals);
-                                    const complete = Object.keys(targets).every(k => dayTotals[k] === targets[k]);
-                                    const isSelected = day.toDateString() === selectedDate.toDateString();
-                                    return `
-                                        <button onclick="window.selectedDate = new Date('${dk}'); window.renderApp()" class="p-1 rounded text-xs font-bold min-h-10 cursor-pointer transition ${isSelected ? 'bg-emerald-600 text-white scale-110 shadow-lg' : complete ? 'bg-green-300 border-2 border-green-500' : dayMeals.length > 0 ? 'bg-blue-100 border-2 border-blue-300' : 'hover:bg-gray-100'}">
-                                            ${day.getDate()}
-                                        </button>
-                                    `;
-                                }).join('')}
-                            </div>
-
-                            <!-- AGENDA DEL DÍA -->
-                            <div class="border-t-2 pt-4">
-                                <h3 class="text-sm font-bold text-gray-900 mb-3">📋 ${selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-                                ${todayMeals.length === 0 ? '<p class="text-xs text-gray-600 italic">Sin comidas registradas</p>' : `
-                                    <div class="space-y-2 max-h-48 overflow-y-auto">
-                                        ${todayMeals.map(meal => `
-                                            <div class="bg-gray-50 rounded-lg p-2 border-l-4 border-emerald-500 text-xs">
-                                                <p class="font-bold text-gray-900">${meal.mealType}</p>
-                                                <p class="text-gray-700">${meal.name}</p>
-                                                <div class="flex flex-wrap gap-0.5 mt-1">
-                                                    ${foodGroups.map(g => meal[g.key] > 0 ? `<span class="bg-gray-200 px-1 py-0.5 rounded font-bold">${g.emoji} ${meal[g.key]}</span>` : '').join('')}
-                                                </div>
-                                                <p class="text-gray-600 mt-1">🕐 ${meal.timestamp}</p>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                `}
-
-                                <!-- RESUMEN -->
-                                <div class="mt-4 pt-4 border-t-2">
-                                    <p class="text-xs font-bold text-gray-900 mb-2">Resumen:</p>
-                                    <div class="grid grid-cols-3 gap-1">
-                                        ${foodGroups.map(g => `
-                                            <div class="text-center text-xs bg-gray-100 rounded p-1">
-                                                <p class="text-sm">${g.emoji}</p>
-                                                <p class="font-bold text-gray-900">${totals[g.key]}/${targets[g.key]}</p>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CONTENIDO DERECHO -->
-                    <div class="lg:col-span-3 space-y-6">
-                        <!-- TIPO DE DÍA -->
-                        <div class="bg-white rounded-xl shadow-lg p-6">
-                            <h2 class="text-lg font-bold mb-4">${selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
-                            <div class="grid grid-cols-3 gap-3">
-                                <button onclick="window.dayType='rest'; window.renderApp()" class="p-3 rounded-lg font-bold transition cursor-pointer ${dayType === 'rest' ? 'bg-emerald-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}">😴 Descanso</button>
-                                <button onclick="window.dayType='morning'; window.renderApp()" class="p-3 rounded-lg font-bold transition cursor-pointer ${dayType === 'morning' ? 'bg-emerald-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}">🌅 Entreno Mañana</button>
-                                <button onclick="window.dayType='afternoon'; window.renderApp()" class="p-3 rounded-lg font-bold transition cursor-pointer ${dayType === 'afternoon' ? 'bg-emerald-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}">🌙 Entreno Tarde</button>
-                            </div>
-                        </div>
-
-                        <!-- PROGRESO GENERAL -->
-                        <div class="bg-white rounded-xl shadow-lg p-6">
-                            <h2 class="text-lg font-bold mb-4">Progreso General del Día</h2>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                ${foodGroups.map(g => {
-                                    const consumed = totals[g.key];
-                                    const target = targets[g.key];
-                                    const isComplete = consumed === target;
-                                    const percent = Math.min((consumed / target) * 100, 100);
-                                    return `
-                                        <div class="bg-gradient-to-br ${g.color} rounded-lg p-4 border-2 ${isComplete ? 'border-green-500 shadow-lg' : 'border-gray-300'}">
-                                            <p class="text-3xl mb-2">${g.emoji}</p>
-                                            <p class="text-xs font-bold text-gray-700">${g.label}</p>
-                                            <p class="text-2xl font-black text-gray-900">${consumed}/${target}</p>
-                                            <div class="w-full bg-gray-300 rounded-full h-2 mt-2 overflow-hidden">
-                                                <div class="h-full transition-all ${isComplete ? 'bg-green-600' : 'bg-emerald-600'}" style="width: ${percent}%"></div>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-
-                        <!-- REGISTRAR COMIDA -->
-                        <div class="bg-white rounded-xl shadow-lg p-6">
-                            <h2 class="text-lg font-bold mb-4">Registrar Comida</h2>
-                            <div class="space-y-4">
-                                <input type="text" id="mealName" placeholder="Nombre de la comida" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-emerald-600 focus:outline-none">
-                                <select id="mealType" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-emerald-600 focus:outline-none">
-                                    ${Object.keys(currentPlan).filter(k => k !== 'TOTAL').map(m => `<option value="${m}">${m}</option>`).join('')}
-                                </select>
-
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <p class="text-sm font-bold text-gray-700 mb-3">Raciones:</p>
-                                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                                        ${foodGroups.map(g => `
-                                            <div>
-                                                <label class="text-xs font-bold text-gray-700 block mb-1">${g.emoji}</label>
-                                                <input type="number" id="meal_${g.key}" min="0" max="10" value="0" class="w-full px-2 py-2 border-2 border-gray-300 rounded text-center font-bold">
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-
-                                <button onclick="window.addMeal()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 rounded-lg hover:shadow-lg transition">➕ Agregar Comida</button>
-                            </div>
-                        </div>
-
-                        <!-- COMIDAS REGISTRADAS -->
-                        ${todayMeals.length > 0 ? `
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-lg font-bold mb-4">Comidas Registradas (${todayMeals.length})</h2>
-                                <div class="space-y-3 max-h-96 overflow-y-auto">
-                                    ${todayMeals.map(meal => `
-                                        <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-emerald-500">
-                                            <div class="flex items-start justify-between gap-2">
-                                                <div class="flex-1">
-                                                    <p class="font-bold text-sm text-gray-900">${meal.name}</p>
-                                                    <p class="text-xs text-gray-600">${meal.mealType} • ${meal.timestamp}</p>
-                                                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 mt-2">
-                                                        ${foodGroups.map(g => meal[g.key] > 0 ? `<span class="text-xs bg-gray-200 px-2 py-1 rounded font-bold">${g.emoji} ${meal[g.key]}</span>` : '').join('')}
-                                                    </div>
-                                                </div>
-                                                <button onclick="window.deleteMeal(${meal.id})" class="text-red-600 hover:text-red-800 p-1 flex-shrink-0">🗑️</button>
-                                            </div>
+                <!-- PLAN DETALLADO -->
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <h2 class="text-2xl font-bold text-emerald-700 mb-4">${plans[selectedDay].name}</h2>
+                    
+                    <div class="space-y-3 mb-6">
+                        ${Object.entries(plans[selectedDay]).filter(([k]) => k !== 'name').map(([meal, raciones]) => `
+                            <button onclick="selectedMeal='${meal}'; render()" class="w-full text-left bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-lg p-4 border-l-4 border-emerald-600 transition ${selectedMeal === meal ? 'ring-2 ring-emerald-600' : ''}">
+                                <p class="font-bold text-lg text-gray-900 mb-3">${meal}</p>
+                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                    ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => `
+                                        <div class="text-center">
+                                            <p class="text-2xl">${emojis[g]}</p>
+                                            <p class="text-xl font-black text-emerald-600">${raciones[g]}</p>
                                         </div>
                                     `).join('')}
                                 </div>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    ${selectedMeal ? `
+                        <!-- DETALLES DE LA COMIDA SELECCIONADA -->
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-6 border-2 border-blue-300 mb-6">
+                            <h3 class="text-2xl font-bold text-blue-700 mb-4">📋 ${selectedMeal} - Valores que debes tener</h3>
+                            <div class="grid grid-cols-3 gap-3">
+                                ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => {
+                                    const valor = plans[selectedDay][selectedMeal][g];
+                                    const nombre = {LAC: 'Lácteos', HC: 'Carbohidratos', PRO: 'Proteínas', VER: 'Verduras', FRU: 'Frutas', GRA: 'Grasas'}[g];
+                                    return `
+                                        <div class="bg-white rounded-lg p-4 border-2 border-blue-300">
+                                            <p class="text-4xl mb-2">${emojis[g]}</p>
+                                            <p class="text-sm font-bold text-gray-700">${nombre}</p>
+                                            <p class="text-3xl font-black text-blue-600">${valor}</p>
+                                            <p class="text-xs text-gray-600 mt-1">raciones</p>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+
+                            <!-- OPCIONES PARA ESE GRUPO -->
+                            <div class="mt-6 space-y-4">
+                                ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => {
+                                    const valor = plans[selectedDay][selectedMeal][g];
+                                    if (valor === 0) return '';
+                                    const nombre = {LAC: 'Lácteos', HC: 'Carbohidratos', PRO: 'Proteínas', VER: 'Verduras', FRU: 'Frutas', GRA: 'Grasas'}[g];
+                                    return `
+                                        <div class="bg-white rounded-lg p-4">
+                                            <p class="font-bold text-lg text-gray-900 mb-2">${emojis[g]} ${nombre} (${valor} ración${valor > 1 ? 'es' : ''})</p>
+                                            <div class="grid grid-cols-1 gap-2">
+                                                ${equivalencias[g].slice(0, 6).map(eq => `<p class="text-sm text-gray-700">✓ ${eq}</p>`).join('')}
+                                                ${equivalencias[g].length > 6 ? `<p class="text-xs text-blue-600 font-bold">+ ${equivalencias[g].length - 6} opciones más en la pestaña INFO</p>` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- TOTAL -->
+                    <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg p-4">
+                        <p class="font-bold text-lg mb-3">📊 TOTAL DEL DÍA</p>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => `
+                                <div class="text-center">
+                                    <p class="text-2xl">${emojis[g]}</p>
+                                    <p class="text-xl font-black">${totals[selectedDay][g]}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        return html;
+    }
+
+    function renderRegistro() {
+        const dayMeals = meals[selectedDate] || [];
+        const plan = plans[selectedDay];
+        let consumed = { LAC: 0, HC: 0, PRO: 0, VER: 0, FRU: 0, GRA: 0 };
+        dayMeals.forEach(m => {
+            Object.keys(consumed).forEach(g => consumed[g] += m[g] || 0);
+        });
+
+        const mealTypes = Object.keys(plan).filter(k => k !== 'name');
+
+        // Valores ingresados actualmente
+        let currentInputs = { LAC: 0, HC: 0, PRO: 0, VER: 0, FRU: 0, GRA: 0 };
+        ['LAC','HC','PRO','VER','FRU','GRA'].forEach(g => {
+            const val = document.getElementById(`val_${g}`);
+            if (val) currentInputs[g] = parseInt(val.value) || 0;
+        });
+
+        // Valores objetivo para esta comida
+        let targetValues = selectedMealForRegistro ? plans[selectedDay][selectedMealForRegistro] : { LAC: 0, HC: 0, PRO: 0, VER: 0, FRU: 0, GRA: 0 };
+
+        let html = `
+            <div class="space-y-4">
+                <!-- SELECTOR FECHA -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">📅 Fecha:</label>
+                    <input type="date" id="dateInput" value="${selectedDate}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+                </div>
+
+                <!-- TIPO DE DÍA PARA REGISTRO -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de día:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="selectedDay='rest'; render()" class="p-2 rounded-lg font-bold text-sm ${selectedDay === 'rest' ? 'bg-emerald-600 text-white' : 'bg-gray-100'}">😴 Descanso</button>
+                        <button onclick="selectedDay='morning'; render()" class="p-2 rounded-lg font-bold text-sm ${selectedDay === 'morning' ? 'bg-emerald-600 text-white' : 'bg-gray-100'}">🌅 Mañana</button>
+                        <button onclick="selectedDay='afternoon'; render()" class="p-2 rounded-lg font-bold text-sm ${selectedDay === 'afternoon' ? 'bg-emerald-600 text-white' : 'bg-gray-100'}">🌙 Tarde</button>
+                    </div>
+                </div>
+
+                <!-- PROGRESO ACTUAL -->
+                <div class="bg-white rounded-lg p-4 shadow">
+                    <p class="font-bold text-gray-900 mb-3">Progreso hoy:</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => {
+                            const target = totals[selectedDay][g];
+                            const cons = consumed[g];
+                            const complete = cons === target;
+                            return `
+                                <div class="text-center p-2 rounded-lg ${complete ? 'bg-green-100 border-2 border-green-500' : cons > target ? 'bg-yellow-100' : 'bg-gray-100'}">
+                                    <p class="text-lg">${emojis[g]}</p>
+                                    <p class="text-sm font-bold">${cons}/${target}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- AGREGAR COMIDA -->
+                <div class="bg-white rounded-lg p-4 shadow">
+                    <p class="font-bold text-gray-900 mb-3">➕ Agregar comida:</p>
+                    <div class="space-y-3">
+                        <input type="text" id="foodName" placeholder="Ej: Pechuga de pollo" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg">
+                        <select id="mealType" onchange="selectedMealForRegistro = this.value; render()" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg">
+                            <option value="">-- Selecciona una comida --</option>
+                            ${mealTypes.map(m => `<option value="${m}">${m}</option>`).join('')}
+                        </select>
+
+                        ${selectedMealForRegistro ? `
+                            <!-- VALORES QUE DEBE TENER ESTA COMIDA -->
+                            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border-2 border-purple-300">
+                                <p class="font-bold text-gray-900 mb-3">📋 ${selectedMealForRegistro} DEBE TENER:</p>
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => {
+                                        const target = targetValues[g];
+                                        const current = currentInputs[g];
+                                        const isCorrect = current === target;
+                                        const color = target === 0 ? 'gray' : isCorrect ? 'green' : current > target ? 'red' : 'blue';
+                                        const bgColor = {
+                                            gray: 'bg-gray-100 border-gray-300',
+                                            green: 'bg-green-100 border-green-500',
+                                            red: 'bg-red-100 border-red-500',
+                                            blue: 'bg-blue-100 border-blue-500'
+                                        }[color];
+                                        const textColor = {
+                                            gray: 'text-gray-600',
+                                            green: 'text-green-700',
+                                            red: 'text-red-700',
+                                            blue: 'text-blue-700'
+                                        }[color];
+                                        return `
+                                            <div class="rounded-lg p-3 border-2 text-center ${bgColor}">
+                                                <p class="text-2xl">${emojis[g]}</p>
+                                                <p class="text-xs font-bold text-gray-700">Objetivo</p>
+                                                <p class="text-2xl font-black ${textColor}">${target}</p>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
                             </div>
                         ` : ''}
-                    </div>
-                </div>`;
-            } else {
-                // === EQUIVALENCIAS ===
-                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
-                
-                foodGroups.forEach(g => {
-                    html += `
-                        <div class="bg-gradient-to-br ${g.color} rounded-xl shadow-lg p-6">
-                            <h3 class="text-lg font-bold text-gray-900 mb-4">${g.emoji} ${g.label}</h3>
-                            <div class="space-y-2 max-h-96 overflow-y-auto">
-                                ${equivalencias[g.key].map(eq => `
-                                    <div class="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition">
-                                        <p class="font-bold text-sm text-gray-900">${eq.nombre}</p>
-                                        <p class="text-xs text-gray-700 mt-1 font-semibold">= 1 ración</p>
-                                        <p class="text-sm text-gray-600 mt-2 bg-gray-100 rounded p-2">📏 ${eq.medida}</p>
+
+                        <!-- INPUTS DE VALORES -->
+                        <div class="grid grid-cols-3 gap-2">
+                            ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => {
+                                const target = targetValues[g];
+                                const current = currentInputs[g];
+                                const isCorrect = target === 0 || current === target;
+                                return `
+                                    <div>
+                                        <label class="text-xs font-bold block mb-1">${emojis[g]}</label>
+                                        <input type="number" id="val_${g}" min="0" max="10" value="${current}" oninput="updateInputs()" class="w-full px-2 py-2 border-2 rounded text-center font-bold ${isCorrect && selectedMealForRegistro ? 'border-green-500 bg-green-50' : 'border-gray-300'}">
+                                        ${selectedMealForRegistro ? `<p class="text-xs text-center mt-1 font-bold">${current}/${target}</p>` : ''}
                                     </div>
-                                `).join('')}
+                                `;
+                            }).join('')}
+                        </div>
+                        <button onclick="addMeal()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700">Agregar</button>
+                    </div>
+                </div>
+
+                <!-- COMIDAS REGISTRADAS -->
+                ${dayMeals.length > 0 ? `
+                    <div class="bg-white rounded-lg p-4 shadow">
+                        <p class="font-bold text-gray-900 mb-3">Comidas registradas (${dayMeals.length}):</p>
+                        <div class="space-y-2">
+                            ${dayMeals.map((m, i) => `
+                                <div class="bg-gray-50 p-3 rounded-lg border-l-4 border-emerald-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="font-bold text-sm text-gray-900">${m.name}</p>
+                                            <p class="text-xs text-gray-600">${m.type}</p>
+                                            <div class="flex flex-wrap gap-1 mt-2">
+                                                ${['LAC','HC','PRO','VER','FRU','GRA'].map(g => m[g] > 0 ? `<span class="text-xs bg-emerald-200 px-2 py-1 rounded font-bold">${emojis[g]}${m[g]}</span>` : '').join('')}
+                                            </div>
+                                        </div>
+                                        <button onclick="deleteMeal('${selectedDate}', ${i})" class="text-red-600 hover:text-red-800 text-lg">🗑️</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const dateInput = document.getElementById('dateInput');
+            if (dateInput) {
+                dateInput.addEventListener('change', (e) => {
+                    selectedDate = e.target.value;
+                    render();
+                });
+            }
+        }, 0);
+
+        return html;
+    }
+
+    function renderEquivalencias() {
+        let html = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${Object.entries(equivalencias).map(([grupo, items]) => {
+                    const nombres = {
+                        LAC: 'Lácteos',
+                        HC: 'Carbohidratos',
+                        PRO: 'Proteínas',
+                        VER: 'Verduras',
+                        FRU: 'Frutas',
+                        GRA: 'Grasas'
+                    };
+                    return `
+                        <div class="bg-white rounded-lg p-4 shadow">
+                            <p class="font-bold text-lg mb-3 text-gray-900">${emojis[grupo]} ${nombres[grupo]} (${items.length} opciones)</p>
+                            <div class="space-y-2">
+                                ${items.map(item => `<p class="text-sm text-gray-700">• ${item}</p>`).join('')}
                             </div>
                         </div>
                     `;
-                });
-                
-                html += `</div>`;
-            }
+                }).join('')}
+            </div>
+        `;
+        return html;
+    }
 
-            html += `</div>`;
-            document.getElementById('app').innerHTML = html;
+    function addMeal() {
+        const name = document.getElementById('foodName').value;
+        const type = document.getElementById('mealType').value;
+        
+        if (!name.trim()) {
+            alert('Por favor ingresa un nombre de comida');
+            return;
         }
 
-        // === FUNCIONES GLOBALES ===
-        window.addMeal = function() {
-            const name = document.getElementById('mealName')?.value;
-            if (!name || !name.trim()) {
-                alert('Por favor ingresa un nombre de comida');
-                return;
-            }
+        if (!type) {
+            alert('Por favor selecciona una comida');
+            return;
+        }
 
-            const dateKey = selectedDate.toISOString().split('T')[0];
-            const meal = {
-                id: Date.now(),
-                name: name,
-                mealType: document.getElementById('mealType')?.value || 'Almuerzo',
-                LAC: parseInt(document.getElementById('meal_LAC')?.value) || 0,
-                HC: parseInt(document.getElementById('meal_HC')?.value) || 0,
-                PRO: parseInt(document.getElementById('meal_PRO')?.value) || 0,
-                VER: parseInt(document.getElementById('meal_VER')?.value) || 0,
-                FRU: parseInt(document.getElementById('meal_FRU')?.value) || 0,
-                GRA: parseInt(document.getElementById('meal_GRA')?.value) || 0,
-                timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-            };
-
-            if (!mealsRegistry[dateKey]) {
-                mealsRegistry[dateKey] = [];
-            }
-            mealsRegistry[dateKey].push(meal);
-            saveMeals();
-            document.getElementById('mealName').value = '';
-            foodGroups.forEach(g => {
-                const el = document.getElementById('meal_' + g.key);
-                if (el) el.value = '0';
-            });
-            renderApp();
+        const meal = {
+            name,
+            type,
+            LAC: parseInt(document.getElementById('val_LAC').value) || 0,
+            HC: parseInt(document.getElementById('val_HC').value) || 0,
+            PRO: parseInt(document.getElementById('val_PRO').value) || 0,
+            VER: parseInt(document.getElementById('val_VER').value) || 0,
+            FRU: parseInt(document.getElementById('val_FRU').value) || 0,
+            GRA: parseInt(document.getElementById('val_GRA').value) || 0
         };
 
-        window.deleteMeal = function(id) {
-            const dateKey = selectedDate.toISOString().split('T')[0];
-            mealsRegistry[dateKey] = (mealsRegistry[dateKey] || []).filter(m => m.id !== id);
-            saveMeals();
-            renderApp();
-        };
+        if (!meals[selectedDate]) meals[selectedDate] = [];
+        meals[selectedDate].push(meal);
+        localStorage.setItem('meals', JSON.stringify(meals));
+        
+        document.getElementById('foodName').value = '';
+        document.getElementById('mealType').value = '';
+        selectedMealForRegistro = null;
+        ['LAC','HC','PRO','VER','FRU','GRA'].forEach(g => document.getElementById('val_' + g).value = '0');
+        
+        render();
+    }
 
-        window.renderApp = renderApp;
-        window.selectedDate = selectedDate;
-        window.dayType = dayType;
-        window.activeTab = activeTab;
+    function deleteMeal(date, index) {
+        meals[date].splice(index, 1);
+        localStorage.setItem('meals', JSON.stringify(meals));
+        render();
+    }
 
-        // === INICIAR ===
-        renderApp();
-    </script>
+    // INICIAR
+    render();
+</script>
+```
+
 </body>
 </html>
